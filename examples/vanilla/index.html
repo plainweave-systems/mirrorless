@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Mirrorless · Vanilla JavaScript</title>
+  </head>
+  <body>
+    <main>
+      <h1>Mirrorless</h1>
+      <p>Vanilla JavaScript. Server data as component input, not client-owned application state.</p>
+      <form id="create-task">
+        <label for="title">New task</label>
+        <input id="title" name="title" type="text" required maxlength="200" autocomplete="off" />
+        <button type="submit">Add task</button>
+      </form>
+      <p id="pending" role="status" aria-live="polite"></p>
+      <p id="error" role="alert"></p>
+      <label><input id="live" type="checkbox" /> Keep live with a two-second refresh timer</label>
+      <button id="refresh" type="button">Refresh now</button>
+      <div class="columns">
+        <section aria-labelledby="tasks-heading">
+          <h2 id="tasks-heading">Tasks</h2>
+          <div id="tasks" aria-live="polite"></div>
+        </section>
+        <aside>
+          <h2>Independent summary</h2>
+          <div id="summary" aria-live="polite"></div>
+          <h2>Selected task</h2>
+          <div id="detail" aria-live="polite">Select a task to declare another read.</div>
+        </aside>
+      </div>
+      <p class="hint">The draft, selection, and pending indicator are local state. No task collection or summary is stored in application state. Open two windows and enable live refresh to see changes from the other client.</p>
+    </main>
+    <script type="module" src="/main.js"></script>
+  </body>
+</html>

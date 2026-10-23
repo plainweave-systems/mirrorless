@@ -1,0 +1,27 @@
+:root { font-family: system-ui, sans-serif; color: #17212d; background: #f4f6f9; color-scheme: light dark; }
+* { box-sizing: border-box; }
+body { margin: 0; padding: 2rem 1rem; }
+main { max-width: 56rem; margin: auto; }
+h1 { letter-spacing: -.04em; margin-bottom: .25rem; }
+p { line-height: 1.6; }
+section, aside, .panel { background: #fff; border: 1px solid #dce2eb; border-radius: .8rem; padding: 1.25rem; margin-block: 1rem; }
+form { display: flex; flex-wrap: wrap; gap: .6rem; margin-block: 1rem; }
+input[type=text], input:not([type]), button { font: inherit; border: 1px solid #9faec2; border-radius: .4rem; padding: .6rem .8rem; }
+input[type=text], input:not([type]) { flex: 1; min-width: 10rem; }
+button { cursor: pointer; background: #e9efff; color: #17212d; }
+button:disabled { cursor: wait; opacity: .55; }
+button:focus-visible, input:focus-visible { outline: 3px solid #586eea; outline-offset: 2px; }
+ul { padding-left: 1.2rem; }
+li { padding-block: .45rem; }
+label { line-height: 1.7; }
+[role=alert], .error { color: #a32036; }
+.hint, small { color: #586579; }
+.columns { display: grid; grid-template-columns: 2fr 1fr; gap: 1rem; }
+@media (max-width: 42rem) { .columns { grid-template-columns: 1fr; } }
+@media (prefers-color-scheme: dark) {
+  :root { color: #e6ebf3; background: #111822; }
+  section, aside, .panel { background: #1a2331; border-color: #344359; }
+  button { background: #2d3d68; color: #f5f7ff; }
+  .hint, small { color: #a9b8cd; }
+  [role=alert], .error { color: #ff9cae; }
+}

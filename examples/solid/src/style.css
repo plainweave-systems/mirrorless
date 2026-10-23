@@ -1,0 +1,48 @@
+.demo { max-width: 64rem; }
+.intro { max-width: 46rem; margin-block: 1rem 2rem; }
+.intro h1 { font-size: clamp(2rem, 5vw, 3.2rem); line-height: 1.12; }
+.eyebrow { font-size: .8rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+.panel h2 { display: flex; align-items: baseline; flex-wrap: wrap; justify-content: space-between; gap: .5rem; font-size: 1.15rem; margin: 0 0 1rem; }
+.controls form { display: block; }
+.controls form > label { display: block; margin-bottom: .4rem; font-weight: 600; }
+.input-row { display: flex; gap: .6rem; }
+.input-row input { min-width: 0; }
+.refresh-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .5rem 1rem; }
+.checkbox-label { display: inline-flex; align-items: center; gap: .6rem; }
+.checkbox-label input { width: 1.1rem; height: 1.1rem; }
+.hint, .interaction-status { font-size: .9rem; }
+.interaction-status { min-height: 1.6em; }
+.view-grid { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(15rem, 1fr); gap: 1rem; }
+.view-grid .panel { margin: 0; }
+.side-views { display: grid; align-content: start; gap: 1rem; background: transparent; border: 0; border-radius: 0; padding: 0; margin: 0; }
+.source-label { font-family: ui-monospace, monospace; font-size: .75rem; font-weight: 400; }
+.task-list { padding: 0; margin: 0; list-style: none; }
+.task-row { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; padding-block: .8rem; border-bottom: 1px solid #dce2eb; }
+.task-row:last-child { border: 0; }
+.task-title { display: grid; flex: 1 1 10rem; gap: .25rem; text-align: left; background: transparent; border-color: transparent; overflow-wrap: anywhere; }
+.task-title.selected { border-color: currentColor; }
+.task-status { font-size: .8rem; }
+.task-actions { display: flex; flex-wrap: wrap; gap: .4rem; }
+.task-actions button { font-size: .85rem; }
+.quiet { background: transparent; }
+.summary-values { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.summary-values > div { display: grid; gap: .2rem; }
+.summary-values strong { font-size: 2rem; font-variant-numeric: tabular-nums; }
+.summary-values span, .task-detail dt { font-size: .85rem; }
+.task-detail { display: grid; gap: .8rem; margin: 0; }
+.task-detail dd { margin: .2rem 0 0; overflow-wrap: anywhere; }
+button:not(:disabled):hover { text-decoration: underline; }
+button:not(:disabled):active { transform: translateY(1px); }
+@media (max-width: 45rem) {
+  .view-grid { grid-template-columns: minmax(0, 1fr); }
+  .input-row { flex-wrap: wrap; }
+  .input-row input { flex-basis: 100%; }
+  .input-row button { width: 100%; }
+}
+@media (prefers-color-scheme: dark) {
+  .task-row { border-color: #344359; }
+  .task-title, .quiet { background: transparent; }
+}
+@media (prefers-reduced-motion: reduce) {
+  button:not(:disabled):active { transform: none; }
+}

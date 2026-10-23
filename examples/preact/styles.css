@@ -1,0 +1,17 @@
+.eyebrow { font-size: .85rem; font-weight: 650; letter-spacing: .08em; text-transform: uppercase; }
+.toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem; }
+.toolbar label, .task-check { display: inline-flex; align-items: center; gap: .6rem; }
+.interaction-status { min-height: 1.6em; font-size: .9rem; }
+.draft-label { flex-basis: 100%; font-weight: 650; }
+.tasks { list-style: none; padding: 0; }
+.tasks li { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: .65rem; padding-block: .8rem; border-block-end: 1px solid currentColor; }
+.task-check { flex: 1; min-width: 10rem; overflow-wrap: anywhere; }
+.task-check input { flex: none; }
+.task-actions { display: flex; flex-wrap: wrap; gap: .4rem; }
+.task-actions button { padding: .4rem .6rem; }
+button[aria-pressed=true] { outline: 2px solid currentColor; outline-offset: 2px; font-weight: 700; }
+button:not(:disabled):hover { text-decoration: underline; }
+button:not(:disabled):active { transform: translateY(1px); }
+footer { padding-block: 1rem; font-size: .9rem; }
+@media (max-width: 30rem) { .task-actions { width: 100%; justify-content: flex-end; } }
+@media (prefers-reduced-motion: reduce) { button:not(:disabled):active { transform: none; } }

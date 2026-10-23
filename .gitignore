@@ -1,0 +1,13 @@
+node_modules/
+dist/
+coverage/
+.vite/
+.svelte-kit/
+.angular/
+.shadow-cljs/
+.cpcache/
+.nrepl-port
+__pycache__/
+*.pyc
+*.tgz
+.DS_Store

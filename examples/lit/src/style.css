@@ -1,0 +1,12 @@
+/* Copyright 2026 Plainweave Systems. SPDX-License-Identifier: Apache-2.0 */
+mirrorless-lit-demo { display: block; }
+.task-row { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; }
+.task-row label { flex: 1; min-width: 10rem; }
+.task-row button { padding: .3rem .5rem; }
+.toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; }
+button:hover:enabled { filter: brightness(.96); }
+button:active:enabled { transform: translateY(1px); }
+code { overflow-wrap: anywhere; }
+@media (prefers-reduced-motion: reduce) {
+  button:active:enabled { transform: none; }
+}

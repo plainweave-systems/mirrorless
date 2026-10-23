@@ -1,0 +1,8 @@
+Mirrorless
+Copyright 2026 Plainweave Systems
+
+Licensed under the Apache License, Version 2.0.
+See LICENSE for the full license text.
+
+Mirrorless was extracted from the serverState runtime in up-web and carries
+forward the server-data-as-component-input architecture of live-components.

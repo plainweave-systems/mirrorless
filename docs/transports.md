@@ -1,0 +1,165 @@
+# Connect the API you already have
+
+Mirrorless does not require a bespoke backend, a server plugin, or a particular wire format. It needs two application dispatchers:
+
+```js
+createMirrorless({
+  query: async (name, params, context) => { /* return a read answer */ },
+  command: async (name, params, context) => { /* confirm a command */ },
+  updates: { /* known consequences */ },
+})
+```
+
+The dispatchers translate names and parameters into your API's operations. They are also where transport failures and application-level failures become rejected promises.
+
+A read can be an existing REST resource, a GraphQL operation, an RPC call, or a composite application read. A command can return an acknowledgement rather than the next version of every affected read.
+
+## REST
+
+A small JSON helper can handle HTTP status consistently:
+
+```js
+async function jsonRequest(url, options = {}) {
+  const response = await fetch(url, {
+    ...options,
+    headers: { 'Content-Type': 'application/json', ...options.headers },
+  })
+  const body = response.status === 204 ? null : await response.json()
+  if (!response.ok) {
+    const error = new Error(`Request failed with HTTP ${response.status}`)
+    error.status = response.status
+    throw error
+  }
+  return body
+}
+```
+
+This example expects JSON for responses other than `204`. Adapt parsing to your service's contract rather than treating every successful response as JSON.
+
+The task demo uses one dispatcher for several operations:
+
+```js
+function query(name, params) {
+  switch (name) {
+    case 'GetTasks':
+      return jsonRequest('/api/tasks')
+    case 'GetTask':
+      return jsonRequest(`/api/tasks/${encodeURIComponent(params.id)}`)
+    case 'GetSummary':
+      return jsonRequest('/api/summary')
+    default:
+      throw new Error(`Unknown read: ${name}`)
+  }
+}
+
+function command(name, params) {
+  switch (name) {
+    case 'CreateTask':
+      return jsonRequest('/api/tasks', {
+        method: 'POST',
+        body: JSON.stringify({ title: params.title }),
+      })
+    case 'UpdateTask': {
+      const { id, ...changes } = params
+      return jsonRequest(`/api/tasks/${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        body: JSON.stringify(changes),
+      })
+    }
+    case 'DeleteTask':
+      return jsonRequest(`/api/tasks/${encodeURIComponent(params.id)}`, {
+        method: 'DELETE',
+      })
+    default:
+      throw new Error(`Unknown command: ${name}`)
+  }
+}
+```
+
+Operation names need not encode HTTP verbs or URLs. Use names that let the application describe its reads and known effects clearly.
+
+## GraphQL
+
+A GraphQL transport must decide what counts as success. An HTTP `200` response can contain GraphQL errors. If a failed command resolves normally, Mirrorless has no way to know that the intended write failed.
+
+The following application factory accepts your existing table of GraphQL documents. It does not define or require a GraphQL schema:
+
+```js
+import { createMirrorless } from 'mirrorless'
+
+export function createGraphqlRuntime({ endpoint, documents, updates }) {
+  async function execute(name, variables) {
+    const document = documents[name]
+    if (!document) throw new Error(`Unknown GraphQL operation: ${name}`)
+
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        operationName: name,
+        query: document,
+        variables,
+      }),
+    })
+    if (!response.ok) throw new Error(`GraphQL HTTP ${response.status}`)
+
+    const result = await response.json()
+    if (result.errors?.length) {
+      // This integration rejects partial results. Choose that policy explicitly.
+      throw new Error('The GraphQL operation was not confirmed')
+    }
+    return result.data
+  }
+
+  return createMirrorless({ query: execute, command: execute, updates })
+}
+```
+
+The names in the update rules can match GraphQL operation names directly. A frontend-only tag taxonomy is not required. Alternatively, an application-level read can compose several GraphQL operations behind one name.
+
+If your API intentionally returns useful partial results alongside errors, design that policy at the dispatcher/selector boundary and make the resulting read shape explicit. Do not accidentally treat a rejected write as a successful command merely because some response data was present.
+
+## RPC and existing clients
+
+An existing typed client can remain responsible for serialization, authentication, signing, endpoint resolution, and protocol errors. A Mirrorless dispatcher can delegate to it. There is no need for the runtime to learn those concerns.
+
+The dispatcher signatures are general on purpose. You can route operations through one existing name-based client, a switch over a small API, or application-level dispatch tables. Mirrorless does not require a different wrapper function for every operation, but it does not prohibit useful domain helpers either.
+
+Do not expose an unrestricted remote execution interface just to make names line up. The API should keep its normal authorization and validation boundaries.
+
+## Composite reads
+
+Sometimes the component needs a read representation that does not correspond to one endpoint. The query dispatcher can obtain several answers and return one application value.
+
+Make the resulting dependency rule reflect all the commands that can affect that value. Naming the composite read is not enough to infer those relationships.
+
+Composite reads also inherit their sources' consistency limitations. Several successful requests do not automatically form one atomic snapshot. If an invariant depends on that guarantee, obtain the representation from an API that can provide it transactionally.
+
+## Response envelopes and selectors
+
+A transport may return an envelope with protocol metadata rather than the exact component input. Mirrorless's default data selection is identity. Use `selectData` when the runtime should retain a response but deliver a selected value:
+
+```js
+const runtime = createMirrorless({
+  query: queryWithEnvelope,
+  command: commandWithEnvelope,
+  selectData: (response) => response.data,
+  updates,
+})
+```
+
+The dispatcher is still responsible for rejecting failures. A selector that turns an error envelope into `undefined` does not provide meaningful error handling; it can leave the boundary without a renderable first value.
+
+## Authentication and cancellation
+
+Create dispatchers for the runtime's user/session scope. Keep credentials out of read parameters and operation names. Those parameters can appear in snapshots, diagnostics, or application logs.
+
+Where the dispatcher context provides an abort signal, pass it to transports that support cancellation. Cancellation is a cooperative resource-management mechanism, not proof that a server write did not execute. An API may commit a command even if the client disconnects before receiving its acknowledgement.
+
+Replace and dispose the runtime when identity or authorization scope changes. See [security and runtime lifetime](security.md).
+
+## CORS and development proxies
+
+Mirrorless does not bypass browser security rules. An API must be callable from the browser under its normal CORS, cookie, and credential policy, or through an appropriate application-controlled backend/proxy.
+
+The examples' Vite proxy is a local development convenience. It is not a production authentication boundary, an authorization mechanism, or a replacement for the upstream API's security model.

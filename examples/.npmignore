@@ -1,0 +1,11 @@
+# Examples are shipped as source, never with generated builds or installed tooling.
+**/node_modules/
+**/dist/
+**/.angular/
+**/.svelte-kit/
+**/.vite/
+**/.shadow-cljs/
+**/__pycache__/
+**/*.pyc
+**/*.tsbuildinfo
+**/package-lock.json
