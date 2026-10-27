@@ -102,6 +102,6 @@ not upgraded during extraction.
   the browser smoke test exercised timer-based liveness, not a socket backend.
 - Demo servers are ephemeral, loopback-only, unauthenticated examples, not
   production infrastructure.
-- Package publishing, registry-name reservation, and remote repository setup
-  remain separate decisions. The package is intentionally private in this
-  checkout to prevent accidental publication.
+- These extraction checks do not by themselves establish npm publication or
+  remote CI status. Release preparation and publication are separate steps;
+  see the [release checklist](../CONTRIBUTING.md#releases).

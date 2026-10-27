@@ -6,10 +6,10 @@ Do not turn the project into an entity store merely because a new feature needs 
 
 ## Work locally
 
-The package is currently private while the extraction is checked. Publishing is a separate decision; do not remove that protection as part of an unrelated change.
+Use Node 24.15+ within the Node 24 line for repository development. Install the locked development dependencies before running the checks.
 
 ```sh
-npm install
+npm ci
 npm run check
 ```
 
@@ -39,6 +39,19 @@ npm run demo:vanilla
 Choose a different `demo:*` script for the adapter being changed. Each example workspace has its own build script; verify compiler-facing changes with the relevant example build in addition to unit tests.
 
 Use Node 24.15+ within the Node 24 line for repository development. The installed Angular and browser-test toolchains require a newer environment than the standalone runtime, whose package declaration remains Node.js 20.19 or later. The direct TypeScript example also relies on Node's type-stripping support. Python and Go are optional tools for their server examples and parity tests. Report skipped tool-dependent checks honestly.
+
+## Releases
+
+Releases are published to npm as the public, unscoped `mirrorless` package. From a clean checkout:
+
+1. Set the next version in `package.json` and `package-lock.json`, and add its dated entry to `CHANGELOG.md`.
+2. Run `npm ci`, `npm run check`, and `npm audit --audit-level=high`.
+3. Review `npm pack --dry-run` to confirm the published files. The library ships native-ESM source and declarations; it does not need a separate library build.
+4. Commit the release changes and tag that revision `v<version>`.
+5. Sign into npm with an authorized account and two-factor authentication, then run `npm publish --access public --registry=https://registry.npmjs.org/`. The `prepublishOnly` hook runs the full checks again.
+6. Verify `npm view mirrorless@<version> version` and push the release commit and tag to the repository.
+
+Never reuse an already-published version or include credentials, generated builds, or installed dependencies in the package.
 
 ## Repository boundaries
 

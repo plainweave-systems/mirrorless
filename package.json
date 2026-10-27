@@ -1,10 +1,21 @@
 {
   "name": "mirrorless",
   "version": "0.1.0",
-  "private": true,
   "license": "Apache-2.0",
   "author": "Plainweave Systems",
   "description": "Server data as component input, not client-owned application state.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/plainweave-systems/mirrorless.git"
+  },
+  "homepage": "https://github.com/plainweave-systems/mirrorless#readme",
+  "bugs": {
+    "url": "https://github.com/plainweave-systems/mirrorless/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "type": "module",
   "main": "./src/core/index.js",
   "types": "./src/core/index.d.ts",

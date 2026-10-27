@@ -2,9 +2,17 @@
 
 Start with a real server read and one ordinary renderer. Do not introduce a client entity store as an intermediate step.
 
+## Install in an application
+
+```sh
+npm install mirrorless
+```
+
+Install your chosen framework separately, then import its adapter from a subpath such as `mirrorless/react`.
+
 ## Run the examples locally
 
-The repository is not presented as an already-published npm release. Use Node 24.15+ within the Node 24 line for its framework/build/browser-test toolchain. Install its development dependencies and start the local API from the repository root:
+Use Node 24.15+ within the Node 24 line for the repository's framework/build/browser-test toolchain. Install its development dependencies and start the local API from the repository root:
 
 ```sh
 npm install

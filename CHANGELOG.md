@@ -1,8 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.1.0 — 2026-10-27
 
-Initial extraction from `up-web` under the name **Mirrorless**. The package remains private pending a separate release decision.
+Initial public release of **Mirrorless**, extracted from `up-web`.
 
 ### Added
 

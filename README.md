@@ -31,11 +31,19 @@ A timer can keep selected reads live. A WebSocket event can trigger a virtual co
 
 The runtime retains responses internally so it can deliver and reuse them. That is not a server-state model your application must own. The distinction is architectural responsibility, not a claim that browser memory contains no server data.
 
-## Status and local use
+## Installation
 
-This repository is the initial extraction from `up-web`. The package is private while the extraction is being checked; these instructions do not assume that an npm release exists.
+```sh
+npm install mirrorless
+```
 
-Use **Node 24.15 or later in the Node 24 line** for repository development: the installed framework and browser-test toolchains have newer requirements than the standalone runtime.
+Import the core from `mirrorless` and your framework adapter from a subpath such as `mirrorless/react`. Install your chosen framework separately; adapters use optional peer dependencies.
+
+The standalone library declares Node.js 20.19 or later. Mirrorless is native ESM and includes TypeScript declarations.
+
+## Local development
+
+This repository is the initial extraction from `up-web`. Use **Node 24.15 or later in the Node 24 line** for repository development: the installed framework and browser-test toolchains have newer requirements than the standalone runtime.
 
 From this repository:
 
@@ -58,7 +66,7 @@ From a neighbouring application, use the local package:
 npm install ../mirrorless
 ```
 
-The standalone library declares Node.js 20.19 or later. That is not the requirement for installing this repository's complete development toolchain; use Node 24.15+ as noted above. Frameworks are optional peer dependencies: importing `mirrorless` does not import every adapter.
+The repository's development-toolchain requirement is separate from the standalone library's Node.js minimum. Importing `mirrorless` does not import every adapter.
 
 ## Quick start
 
