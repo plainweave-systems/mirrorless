@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.1 — 2026-10-27
+
+### Added
+
+- Minimal raw-URL HTTP example using GET reads and POST commands without an operation-name routing table.
+- URL-first React and core quick starts, with explicit URL-to-URL update rules and exact-match semantics.
+
 ## 0.1.0 — 2026-10-27
 
 Initial public release of **Mirrorless**, extracted from `up-web`.

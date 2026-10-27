@@ -7,7 +7,7 @@ Your server already has state. Your frontend does not need an incomplete, indepe
 Mirrorless delivers server data to components and keeps that data moving as things change. Application code keeps genuinely local state—drafts, selection, navigation, pending interactions—without also maintaining server-derived entity collections, patching them after commands, and coordinating those patches across views.
 
 ```jsx
-<MirrorlessQuery id="GetTasks" loading={LoadingTasks}>
+<MirrorlessQuery id="/api/tasks" loading={LoadingTasks}>
   {(tasks) => <TaskList tasks={tasks} />}
 </MirrorlessQuery>
 ```
@@ -55,8 +55,9 @@ npm run demo:server
 In another terminal, choose a browser demo:
 
 ```sh
-npm run demo:react
-# or demo:preact, demo:vue, demo:svelte, demo:solid,
+npm run demo:http
+# Minimal raw-URL GET/POST example, without operation-name routing.
+# Or demo:react, demo:preact, demo:vue, demo:svelte, demo:solid,
 # demo:angular, demo:lit, demo:vanilla
 ```
 
@@ -77,55 +78,32 @@ This example uses the same task endpoints as the [demo servers](docs/examples.md
 ```js
 import { createMirrorless } from 'mirrorless'
 
-async function request(path, options = {}) {
-  const response = await fetch(`/api${path}`, {
-    ...options,
-    headers: { 'Content-Type': 'application/json', ...options.headers },
-  })
-  const body = await response.json()
-  if (!response.ok) throw new Error(body.error ?? `HTTP ${response.status}`)
+async function request(url, options = {}) {
+  const response = await fetch(url, options)
+  const body = response.status === 204 ? null : await response.json()
+  if (!response.ok) throw new Error(body?.error ?? `HTTP ${response.status}`)
   return body
 }
 
-const Id = Symbol.for('id')
-
 export const runtime = createMirrorless({
-  query(name, params) {
-    if (name === 'GetTasks') return request('/tasks')
-    if (name === 'GetTask') {
-      return request(`/tasks/${encodeURIComponent(params.id)}`)
-    }
-    if (name === 'GetSummary') return request('/summary')
-    throw new Error(`Unknown read: ${name}`)
-  },
-
-  command(name, params) {
-    if (name === 'CreateTask') {
-      return request('/tasks', {
-        method: 'POST',
-        body: JSON.stringify({ title: params.title }),
-      })
-    }
-    if (name === 'UpdateTask') {
-      const { id, ...changes } = params
-      return request(`/tasks/${encodeURIComponent(id)}`, {
-        method: 'PATCH',
-        body: JSON.stringify(changes),
-      })
-    }
-    throw new Error(`Unknown command: ${name}`)
-  },
-
+  query: (url, _params, { signal }) => request(url, { signal }),
+  command: (url, body, { signal }) => request(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+    signal,
+  }),
   updates: {
-    CreateTask: ['GetTasks', 'GetSummary'],
-    UpdateTask: ['GetTasks', ['GetTask', { id: Id }], 'GetSummary'],
-    RefreshTasks: ['GetTasks', 'GetTask', 'GetSummary'],
+    '/api/tasks': ['/api/tasks', '/api/summary'],
+    refresh: ['/api/tasks', '/api/summary'],
   },
-  virtualCommands: ['RefreshTasks'],
+  virtualCommands: ['refresh'],
 })
 ```
 
-The dispatchers decide how to talk to your API. Names such as `GetTasks` may be API operation names or application-level reads; there is no requirement to register a wrapper function for every operation.
+A read's `id` is its actual GET URL. `runtime.command('/api/tasks', body)` sends a POST to that same URL. There is no `GetTasks`/`CreateTask` routing table or per-endpoint wrapper. The update rule says that a successful POST affects the task list and summary; it does not copy the command receipt into either read.
+
+Try the runnable [raw-URL example](examples/http/README.md). Named operations are still useful for RPC, GraphQL, or an existing domain client; they are optional, not a prerequisite for using REST. See [transports](docs/transports.md) for both styles.
 
 ### Render plain data
 
@@ -158,7 +136,7 @@ function CreateTask() {
     setPending(true)
     setError(null)
     try {
-      await runtime.command('CreateTask', { title: title.trim() })
+      await runtime.command('/api/tasks', { title: title.trim() })
       setTitle('')
     } catch (cause) {
       setError(cause)
@@ -180,10 +158,10 @@ export function App() {
   return (
     <MirrorlessProvider runtime={runtime}>
       <CreateTask />
-      <MirrorlessQuery id="GetSummary">
+      <MirrorlessQuery id="/api/summary">
         {(summary) => <p>{summary.done} of {summary.total} completed</p>}
       </MirrorlessQuery>
-      <MirrorlessQuery id="GetTasks" loading={LoadingTasks}>
+      <MirrorlessQuery id="/api/tasks" loading={LoadingTasks}>
         {(tasks) => <TaskList tasks={tasks} />}
       </MirrorlessQuery>
     </MirrorlessProvider>
@@ -199,7 +177,7 @@ Create runtimes at the appropriate application/session boundary. The module-leve
 
 ```js
 const timer = setInterval(() => {
-  runtime.command('RefreshTasks').catch((error) => {
+  runtime.command('refresh').catch((error) => {
     console.error('Refresh trigger failed', error)
   })
 }, 2000)
@@ -208,7 +186,7 @@ const timer = setInterval(() => {
 clearInterval(timer)
 ```
 
-`RefreshTasks` is virtual: it makes no command request, but applies the same update rules. A focus event or validated WebSocket notification can invoke it too. See [liveness](docs/liveness.md) for complete setup and cleanup recipes.
+`refresh` is a virtual event, not a POST URL: it makes no command request, but applies the same update rules. A focus event or validated WebSocket notification can invoke it too. See [liveness](docs/liveness.md) for complete setup and cleanup recipes.
 
 ## Framework adapters
 

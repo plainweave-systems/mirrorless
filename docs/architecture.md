@@ -8,7 +8,7 @@ For the motivation, start with [Why Mirrorless?](why-mirrorless.md). This page e
 
 The predecessor, [`live-components`](https://github.com/alesguzik/live-components), made ordinary REST reads subscribable. A client component declared URL interests. The server reran existing GET handlers when application code marked a resource updated, then pushed responses over a WebSocket. The normal renderer received response bodies after its reads had arrived.
 
-It did not push rendered components, HTML, or DOM changes. Its important idea was that a component could consume server data without maintaining and patching a local copy of the server's collections. Its TodoMVC example issued ordinary write requests; server-side update markers caused the displayed collection to arrive again.
+It did not push rendered components, HTML, or DOM changes. Its important idea was that a component could consume server data without maintaining and patching a local copy of the server's collections. Its TodoMVC view subscribed directly to `/todos`; actions used ordinary HTTP calls such as `POST /todos/new`, and server-side update markers caused the displayed collection to arrive again. Named routing was optional application convenience, not a prerequisite for receiving data.
 
 The implementation used Clojure/ClojureScript, Reagent, DataScript for subscription topology, and Immutant's WebSocket APIs. A full URL identified a read, while a query-string-stripped token grouped updates. Several local subscribers could share one URL subscription. A short delayed unsubscribe allowed views to return without immediately discarding interest.
 
@@ -16,7 +16,7 @@ The implementation used Clojure/ClojureScript, Reagent, DataScript for subscript
 
 | Concern | `live-components` | Mirrorless |
 | --- | --- | --- |
-| What a consumer declares | Subscription URLs | Read name and parameter values |
+| What a consumer declares | Subscription URLs | Read URLs or names, with optional parameter values |
 | What successful rendering receives | Response bodies | Selected read data |
 | Where known write effects are expressed | Server-side update markers | Declared command-to-read rules |
 | How new values arrive | Server reruns GET and pushes its response | Runtime dispatches a read after a trigger |
@@ -26,9 +26,11 @@ The implementation used Clojure/ClojureScript, Reagent, DataScript for subscript
 
 The point is not that pulling is better than pushing. Mirrorless can be kept live by either timer-driven reads or push-triggered invalidation. Moving the coordination boundary allows it to work with APIs that the frontend does not control.
 
+The [raw-URL example](../examples/http/README.md) keeps the predecessor's direct style: views request `/api/tasks`, and writes POST to `/api/tasks`, without mapping either to an invented operation name. The difference is the update mechanism: Mirrorless declares the affected GET URLs on the client and refetches them. Its URL names match exactly; unlike the predecessor's update tokens, they do not automatically group query-string variants.
+
 ## Reads are questions, not entities
 
-A read is identified by a name and JSON-compatible parameters:
+A read is identified by a name and JSON-compatible parameters. The name can already be its URL, such as `/api/tasks/1`; it need not be an alias. An API with named operations can instead use:
 
 ```js
 ['GetTask', { id: '1' }]

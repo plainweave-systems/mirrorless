@@ -10,11 +10,11 @@ createMirrorless({
 })
 ```
 
-The dispatchers translate names and parameters into your API's operations. They are also where transport failures and application-level failures become rejected promises.
+A read name can already be its GET URL, and a command name can already be its POST URL. No operation-name routing table is required. The dispatchers supply your transport policy and turn transport or application-level failures into rejected promises; they only need to translate names when your API actually benefits from that.
 
 A read can be an existing REST resource, a GraphQL operation, an RPC call, or a composite application read. A command can return an acknowledgement rather than the next version of every affected read.
 
-## REST
+## REST: use URLs directly
 
 A small JSON helper can handle HTTP status consistently:
 
@@ -36,7 +36,50 @@ async function jsonRequest(url, options = {}) {
 
 This example expects JSON for responses other than `204`. Adapt parsing to your service's contract rather than treating every successful response as JSON.
 
-The task demo uses one dispatcher for several operations:
+Use each URL directly as the operation name:
+
+```js
+import { createMirrorless } from 'mirrorless'
+
+const runtime = createMirrorless({
+  query: (url, _params, { signal }) => jsonRequest(url, { signal }),
+  command: (url, body, { signal }) => jsonRequest(url, {
+    method: 'POST',
+    body: JSON.stringify(body),
+    signal,
+  }),
+  updates: {
+    '/api/tasks': ['/api/tasks', '/api/summary'],
+  },
+})
+
+await runtime.command('/api/tasks', { title: 'Review proposal' })
+```
+
+A component declares the actual GET URL:
+
+```jsx
+<MirrorlessQuery id="/api/tasks">
+  {(tasks) => <TaskList tasks={tasks} />}
+</MirrorlessQuery>
+```
+
+The command is an ordinary `POST /api/tasks`, whose receipt can be just `{ id }`. Its update rule reruns interested `GET /api/tasks` and `GET /api/summary` requests. Query and command dispatch are separate, so GET and POST can use the same URL without inventing aliases such as `GetTasks` and `CreateTask`.
+
+The runnable [raw-URL demo](../examples/http/README.md) uses this approach with the existing task servers and no server changes.
+
+### URL identity and HTTP methods
+
+Put path parameters and query strings in the URL itself, for example `/api/tasks/1` or `/api/tasks?status=active`. In this example the query dispatcher does not serialize the separate `params` argument; the URL already contains the request parameters. Use consistent URLs for equivalent reads so subscribers can share a run.
+
+Mirrorless treats those strings as exact read identities. It does **not** infer route patterns, strip query strings, or group every `/api/tasks/...` read under `/api/tasks`. Include each affected URL in the update rules; an unlisted filtered URL will not refresh just because a similarly named collection URL does.
+
+This minimal transport deliberately chooses GET for reads and POST for commands. For PATCH/DELETE, your generic command function can accept a method along with the body, or your existing API client can keep handling those methods. If different commands share a URL, make their update rules cover the effects of each, or distinguish them with parameter patterns or method-qualified command names. None of this requires a per-endpoint switch.
+
+### Optional: named operations
+
+Names can be useful when they are already part of your API or when one application read composes several endpoints. The fuller framework demos use this alternative, not a required REST routing layer:
+
 
 ```js
 function query(name, params) {
@@ -76,7 +119,7 @@ function command(name, params) {
 }
 ```
 
-Operation names need not encode HTTP verbs or URLs. Use names that let the application describe its reads and known effects clearly.
+Use whichever identity already makes the application clearest: raw URLs for ordinary HTTP resources, existing operation names for a domain API, or explicit names for composite reads. There is no requirement to rename REST resources before they can be consumed.
 
 ## GraphQL
 

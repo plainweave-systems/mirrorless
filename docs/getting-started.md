@@ -22,10 +22,10 @@ npm run demo:server
 In a second terminal:
 
 ```sh
-npm run demo:vanilla
+npm run demo:http
 ```
 
-The vanilla example shows the architecture without a framework-specific state API. The React, Preact, Vue, Svelte, Solid, Angular, and Lit examples use the same server and shared task runtime; choose the corresponding `demo:*` script from `package.json`.
+The [raw-URL example](../examples/http/README.md) uses ordinary GET and POST URLs directly, without renaming endpoints or introducing a routing table. It shows the architecture without a framework-specific state API. The fuller Vanilla, React, Preact, Vue, Svelte, Solid, Angular, and Lit demos use the same server with a named-operation integration; choose the corresponding `demo:*` script from `package.json`.
 
 The API process owns its task collection. Browser demos own draft inputs, selection, and pending interactions. A successful command causes new list/detail/summary inputs to arrive; it does not make the demo patch a local task collection.
 
@@ -43,30 +43,39 @@ The package is native ESM and includes TypeScript declarations. Import the core 
 
 The standalone package declares Node.js 20.19 or later. This does not mean its complete repository toolchain runs on that minimum: the installed Angular and browser-test tools require a newer environment, for which this repository uses Node 24.15+. The direct TypeScript example also uses Node's type-stripping support rather than a transpilation step.
 
-## Define two dispatchers
+## Use GET and POST URLs directly
 
-`query(name, params, context)` obtains a read answer. `command(name, params, context)` executes a write and rejects if it is not confirmed.
-
-Keep your existing API client, credentials, serialization, and protocol policy at this boundary. Mirrorless does not require a special endpoint or a new backend protocol.
-
-A minimal REST read can look like this:
+For an existing REST API, a read's name can simply be its URL. `query(url, params, context)` performs a GET; `command(url, body, context)` performs a POST. These two generic functions are enough—there is no need to translate `/api/tasks` into `GetTasks` and back again.
 
 ```js
 import { createMirrorless } from 'mirrorless'
 
+async function request(url, options = {}) {
+  const response = await fetch(url, options)
+  const body = response.status === 204 ? null : await response.json()
+  if (!response.ok) throw new Error(body?.error ?? `HTTP ${response.status}`)
+  return body
+}
+
 const runtime = createMirrorless({
-  async query(name, params, context) {
-    if (name !== 'GetTasks') throw new Error(`Unknown read: ${name}`)
-    const response = await fetch('/api/tasks', { signal: context.signal })
-    if (!response.ok) throw new Error(`HTTP ${response.status}`)
-    return response.json()
+  query: (url, _params, { signal }) => request(url, { signal }),
+  command: (url, body, { signal }) => request(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+    signal,
+  }),
+  updates: {
+    '/api/tasks': ['/api/tasks', '/api/summary'],
+    refresh: ['/api/tasks', '/api/summary'],
   },
+  virtualCommands: ['refresh'],
 })
 ```
 
-This runtime supports one read. It does not yet define any server commands. An unknown command must not be silently treated as successful.
+The URLs go straight to `fetch`. This JSON API returns read representations for GET and acknowledgements for POST. HTTP failures must reject rather than trigger successful-command refreshes. Keep your normal credentials, validation, and transport policy at this boundary.
 
-For a complete read/write dispatcher, use the [README quick start](../README.md#quick-start) or the actual [shared demo integration](../examples/shared/task-api.js).
+See the runnable [HTTP runtime](../examples/http/runtime.js) or the [README quick start](../README.md#quick-start). Named operations remain an option for RPC, GraphQL, and existing domain clients; see [transports](transports.md).
 
 ## Put a data boundary at the point of use
 
@@ -82,7 +91,7 @@ function TaskList({ tasks }) {
 export function TasksPage({ runtime }) {
   return (
     <MirrorlessProvider runtime={runtime}>
-      <MirrorlessQuery id="GetTasks" loading={() => <p>Loading…</p>}>
+      <MirrorlessQuery id="/api/tasks" loading={() => <p>Loading…</p>}>
         {(tasks) => <TaskList tasks={tasks} />}
       </MirrorlessQuery>
     </MirrorlessProvider>
@@ -96,29 +105,18 @@ Other adapters express the same boundary using slots, snippets, accessors, signa
 
 ## Add a command without adding a second collection
 
-Suppose `CreateTask({ title })` returns only `{ id }`. Declare that it can affect `GetTasks` and `GetSummary`:
+Suppose `POST /api/tasks` returns only `{ id }`. The update rule above declares that it can affect `GET /api/tasks` and `GET /api/summary`:
 
 ```js
-const updates = {
-  CreateTask: ['GetTasks', 'GetSummary'],
-}
+const receipt = await runtime.command('/api/tasks', { title: 'Review proposal' })
+// No tasks.push(...), list replacement, or summary-count increment.
 ```
 
-The form awaits `runtime.command('CreateTask', { title })`, then clears its local draft if appropriate. It does not append an invented task to the returned list or increment a client-maintained summary.
+After the POST succeeds, Mirrorless refreshes those interested reads. The form can clear its local draft; it does not patch the returned list or maintain a summary counter.
 
-For detail reads, a parameter binding can narrow the affected term:
+The GET and POST can have the same URL because reads and commands use separate dispatchers. The update rules describe consequences, not server routing.
 
-```js
-const updates = {
-  UpdateTask: [
-    'GetTasks',
-    ['GetTask', { id: Symbol.for('id') }],
-    'GetSummary',
-  ],
-}
-```
-
-The symbol means the detail read's `id` must equal the successful command's `id`. It is dependency selection, not a transformation of read data. Start broad for filtered lists and narrow only with enough information; [membership changes](update-rules.md#collection-membership-is-the-common-trap) deserve particular care.
+A detail read can use `/api/tasks/1`, and a filtered read can include its query string directly in the URL. Mirrorless matches read names exactly: it does not strip query strings, match path prefixes, or infer which representations a write affects. Declare every affected URL explicitly. If an API needs parameterized operations or method-specific commands, the [transport guide](transports.md) and [update rules](update-rules.md) show those alternatives.
 
 ## Add TypeScript where it helps
 
@@ -130,8 +128,8 @@ import type { QuerySnapshot } from 'mirrorless'
 type Task = Readonly<{ id: string; title: string; done: boolean }>
 type TaskSummary = Readonly<{ total: number; done: number }>
 
-const tasks = runtime.subscribe<readonly Task[]>('GetTasks', {}, { fetch: false })
-const summary = runtime.subscribe<TaskSummary>('GetSummary', {}, { fetch: false })
+const tasks = runtime.subscribe<readonly Task[]>('/api/tasks', {}, { fetch: false })
+const summary = runtime.subscribe<TaskSummary>('/api/summary', {}, { fetch: false })
 
 function consume(snapshot: QuerySnapshot<readonly Task[]>) {
   if (snapshot.data !== undefined) {
@@ -142,7 +140,7 @@ function consume(snapshot: QuerySnapshot<readonly Task[]>) {
 const stop = tasks.onChange(() => consume(tasks.getSnapshot()))
 await Promise.all([tasks.refetch(), summary.refetch()])
 
-const receipt = await runtime.command<{ id: string }>('CreateTask', {
+const receipt = await runtime.command<{ id: string }>('/api/tasks', {
   title: 'Review proposal',
 })
 console.log(receipt.id)
@@ -152,24 +150,19 @@ tasks.unsubscribe()
 summary.unsubscribe()
 ```
 
-This snippet assumes the complete task runtime from the shared demo integration, not the read-only minimal runtime earlier on this page. The generic arguments describe expected values; they do not perform network schema validation. Validate responses at the dispatcher if your trust boundary requires it.
+This snippet uses the GET/POST runtime defined above. The generic arguments describe expected values; they do not perform network schema validation. Validate responses at the dispatcher if your trust boundary requires it.
 
 In normal component code, prefer the framework adapter to manual subscription management. The explicit API is useful for non-rendering consumers, tests, and integration work.
 
 ## Connect external change signals
 
-Configure a virtual command:
+The `refresh` event in the configuration above is a virtual command:
 
 ```js
-const runtime = createMirrorless({
-  query: readFromApi,
-  command: writeToApi,
-  virtualCommands: ['RefreshTasks'],
-  updates: { RefreshTasks: ['GetTasks', 'GetTask', 'GetSummary'] },
-})
+await runtime.command('refresh')
 ```
 
-`readFromApi` and `writeToApi` are application dispatchers. A timer or event handler can call `runtime.command('RefreshTasks')` without making a network write. The [liveness guide](liveness.md) includes cleanup and validated WebSocket recipes.
+It refreshes interested task and summary URLs without making a POST. A timer, focus handler, refresh button, or validated WebSocket notification can trigger it. The [liveness guide](liveness.md) includes cleanup and validated WebSocket recipes.
 
 ## Choose the runtime's lifetime deliberately
 

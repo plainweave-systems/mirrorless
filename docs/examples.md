@@ -22,13 +22,35 @@ The implementations use their language's standard HTTP facilities. The Python an
 
 See [the server guide](../examples/servers/README.md) for the shared contract, validation, test commands, and deliberate limitations. These are ephemeral development servers without production authentication or persistence; do not expose them publicly.
 
+## Start with raw GET/POST URLs
+
+The [minimal HTTP example](../examples/http/README.md) is the shortest path from an existing REST API to a renderer:
+
+```sh
+npm run demo:http
+```
+
+Its [runtime](../examples/http/runtime.js) passes URLs directly to `fetch`: reads use GET, and commands use POST with a JSON body. Its [view](../examples/http/main.js) declares `/api/tasks` and `/api/summary` interests, then submits `runtime.command('/api/tasks', { title })`.
+
+```text
+GET  /api/tasks       -> Task[]
+GET  /api/summary     -> { total, done }
+POST /api/tasks       -> { id }
+                         └─► refresh interested GETs for both URLs
+```
+
+There is no `GetTasks`/`CreateTask` routing switch or wrapper per endpoint. The only relationship to declare is which GET URLs a successful POST can affect. The same idea appears in the [README's React quick start](../README.md#quick-start).
+
+URLs match exactly, including query strings; this example does not add path-prefix matching or infer resource dependencies. Its Refresh button triggers the virtual `refresh` event, which reruns the interested GETs without a POST. The fuller examples below add selection, other HTTP methods, and optional timer-driven refresh using named operations.
+
 ## Choose a browser renderer
 
 After installing repository dependencies, start any demo in a second terminal:
 
 | Example | Command | Entry point |
 | --- | --- | --- |
-| Vanilla JavaScript | `npm run demo:vanilla` | [main.js](../examples/vanilla/main.js) |
+| Minimal raw-URL JavaScript | `npm run demo:http` | [main.js](../examples/http/main.js) |
+| Vanilla JavaScript, full task demo | `npm run demo:vanilla` | [main.js](../examples/vanilla/main.js) |
 | React / JSX | `npm run demo:react` | [main.jsx](../examples/react/main.jsx) |
 | Preact / TSX | `npm run demo:preact` | [main.tsx](../examples/preact/main.tsx) |
 | Vue / TypeScript | `npm run demo:vue` | [App.vue](../examples/vue/App.vue) |
@@ -48,7 +70,7 @@ Look for the separation between:
 - Commands that await confirmation rather than editing fetched arrays.
 - Optional timer-driven live refresh or explicit refresh controls.
 
-The [shared task integration](../examples/shared/task-api.js) supplies transport dispatch and update rules. It returns `createMirrorless(...)`; it is example application code, not a second library or mandatory backend client.
+The fuller framework demos use the [shared named-operation task integration](../examples/shared/task-api.js) for transport dispatch and update rules. It returns `createMirrorless(...)`; it is example application code, not a second library or mandatory backend client. The raw-URL example deliberately bypasses that routing layer.
 
 ## Why command receipts have a different shape
 
@@ -112,7 +134,7 @@ curl -i -X PATCH http://127.0.0.1:4000/api/tasks/1 \
   -d '{"done":true}'
 ```
 
-The client's timer emits `RefreshTasks`, and interested reads obtain new answers. Without a timer or other invalidation signal, use the explicit refresh control. You can also open two demos against the same API process: server changes are shared, while drafts and selection remain local to each client.
+The fuller demos' timers emit `RefreshTasks`, and interested reads obtain new answers. The minimal raw-URL example has no timer; use its Refresh button to trigger `refresh`. Without a timer or other invalidation signal, a write in another client is not automatically announced. You can also open two demos against the same API process: server changes are shared, while drafts and selection remain local to each client.
 
 The sample servers intentionally do not expose WebSocket endpoints. The [socket recipe](liveness.md#websocket-triggered-refresh) shows how a real application's notifications can enter the same virtual-command path without changing these read/command HTTP contracts.
 

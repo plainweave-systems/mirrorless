@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Mirrorless · Direct HTTP URLs</title>
+    <link rel="stylesheet" href="../shared/style.css" />
+    <style>
+      button:hover:not(:disabled) { filter: brightness(.95); }
+      button:active:not(:disabled) { filter: brightness(.9); }
+      input[type=text] { width: 100%; min-width: 0; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Mirrorless · Direct HTTP URLs</h1>
+      <p>Read a URL with GET. Write to a URL with POST. Successful writes refresh interested reads.</p>
+      <form id="create-task">
+        <label for="title">New task</label>
+        <input id="title" name="title" type="text" required maxlength="200" autocomplete="off" />
+        <button type="submit">Add task</button>
+      </form>
+      <p id="pending" role="status" aria-live="polite"></p>
+      <p id="error" role="alert"></p>
+      <button id="refresh" type="button">Refresh reads</button>
+      <div class="columns">
+        <section aria-labelledby="tasks-heading">
+          <h2 id="tasks-heading">GET /api/tasks</h2>
+          <div id="tasks" aria-live="polite"></div>
+        </section>
+        <aside aria-labelledby="summary-heading">
+          <h2 id="summary-heading">GET /api/summary</h2>
+          <div id="summary" aria-live="polite"></div>
+        </aside>
+      </div>
+      <p class="hint">Only the draft, pending indicator, and command error are local state. The list and summary come from independent server reads, not from the POST receipt.</p>
+    </main>
+    <script type="module" src="/main.js"></script>
+  </body>
+</html>

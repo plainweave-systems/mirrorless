@@ -1,6 +1,6 @@
 {
   "name": "mirrorless",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "license": "Apache-2.0",
   "author": "Plainweave Systems",
   "description": "Server data as component input, not client-owned application state.",
@@ -90,7 +90,8 @@
     "examples/solid",
     "examples/angular",
     "examples/lit",
-    "examples/vanilla"
+    "examples/vanilla",
+    "examples/http"
   ],
   "scripts": {
     "test": "npm run test:core && npm run test:dom && npm run test:examples",
@@ -106,6 +107,7 @@
     "check:package": "node scripts/check-package.js && node scripts/smoke-package.js",
     "prepublishOnly": "npm run check",
     "demo:server": "node examples/servers/node/server.js",
+    "demo:http": "npm run dev --workspace examples/http",
     "demo:vanilla": "npm run dev --workspace examples/vanilla",
     "demo:react": "npm run dev --workspace examples/react",
     "demo:preact": "npm run dev --workspace examples/preact",
