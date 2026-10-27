@@ -6,7 +6,7 @@ For the motivation, start with [Why Mirrorless?](why-mirrorless.md). This page e
 
 ## From `live-components` to Mirrorless
 
-The predecessor, [`live-components`](https://github.com/alesguzik/live-components), made ordinary REST reads subscribable. A client component declared URL interests. The server reran existing GET handlers when application code marked a resource updated, then pushed responses over a WebSocket. The normal renderer received response bodies after its reads had arrived.
+The predecessor, [`live-components`](https://github.com/alesya-h/live-components), made ordinary REST reads subscribable. A client component declared URL interests. The server reran existing GET handlers when application code marked a resource updated, then pushed responses over a WebSocket. The normal renderer received response bodies after its reads had arrived.
 
 It did not push rendered components, HTML, or DOM changes. Its important idea was that a component could consume server data without maintaining and patching a local copy of the server's collections. Its TodoMVC view subscribed directly to `/todos`; actions used ordinary HTTP calls such as `POST /todos/new`, and server-side update markers caused the displayed collection to arrive again. Named routing was optional application convenience, not a prerequisite for receiving data.
 
